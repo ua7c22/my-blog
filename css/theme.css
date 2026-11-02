@@ -1,0 +1,160 @@
+/* =========================================================
+   theme.css —— 炫酷深色霓虹主题（覆盖 Clean Blog 默认样式）
+   主色：霓虹青 #00d4ff → 霓虹紫 #7b2ff7
+   ========================================================= */
+
+:root {
+  --neon-cyan: #00d4ff;
+  --neon-purple: #a855f7;
+  --neon-gradient: linear-gradient(135deg, #00d4ff 0%, #7b2ff7 100%);
+  --neon-gradient-h: linear-gradient(135deg, #7b2ff7 0%, #00d4ff 100%);
+  --bg-deep: #070b14;
+  --text-main: #dbe4f0;
+  --text-muted: #7f8ea3;
+}
+
+html { background: var(--bg-deep); }
+
+body {
+  background: transparent;
+  color: var(--text-main);
+}
+
+/* ---------- 顶部导航：深色毛玻璃 ---------- */
+#mainNav {
+  background-color: rgba(7, 11, 20, 0.72);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 212, 255, 0.18);
+}
+#mainNav.navbar-scrolled {
+  background-color: rgba(7, 11, 20, 0.92) !important;
+}
+#mainNav .navbar-brand,
+#mainNav .nav-link {
+  color: #e6edf7 !important;
+  transition: color .3s, text-shadow .3s;
+}
+#mainNav .nav-link:hover,
+#mainNav .navbar-brand:hover {
+  color: var(--neon-cyan) !important;
+  text-shadow: 0 0 12px rgba(0, 212, 255, 0.6);
+}
+#mainNav .navbar-toggler {
+  color: var(--neon-cyan);
+  border-color: rgba(0, 212, 255, 0.3);
+}
+
+/* ---------- 大图标题：霓虹发光 ---------- */
+.masthead::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(7, 11, 20, 0.45) 0%, rgba(7, 11, 20, 0.82) 100%);
+}
+.masthead .site-heading h1,
+.masthead .post-heading h1,
+.masthead .page-heading h1 {
+  color: #ffffff;
+  text-shadow: 0 0 22px rgba(0, 212, 255, 0.75), 0 0 42px rgba(123, 47, 247, 0.5);
+}
+.masthead .subheading {
+  color: var(--neon-cyan) !important;
+  text-shadow: 0 0 14px rgba(0, 212, 255, 0.55);
+}
+.post-heading .meta,
+.post-heading .meta a {
+  color: #b7c4d8;
+}
+.post-heading .meta a:hover { color: var(--neon-cyan); }
+
+/* ---------- 文章列表 ---------- */
+.post-preview a { color: #e6edf7; }
+.post-preview .post-title { color: #ffffff; }
+.post-preview a:hover .post-title {
+  color: var(--neon-cyan);
+  text-shadow: 0 0 14px rgba(0, 212, 255, 0.5);
+}
+.post-preview .post-subtitle { color: #9fb2c8; }
+.post-meta { color: var(--text-muted); }
+.post-meta a { color: var(--neon-cyan); }
+
+/* ---------- 正文 ---------- */
+p, li { color: #c9d4e4; }
+.section-heading {
+  color: #ffffff;
+  text-shadow: 0 0 12px rgba(0, 212, 255, 0.35);
+}
+blockquote.blockquote {
+  color: #9fb2c8;
+  border-left: 3px solid var(--neon-cyan);
+}
+.caption { color: var(--text-muted) !important; }
+
+/* ---------- 链接 ---------- */
+a { color: var(--neon-cyan); }
+a:hover { color: var(--neon-purple); }
+
+/* ---------- 按钮 ---------- */
+.btn-primary {
+  background-image: var(--neon-gradient);
+  border: none;
+  color: #fff !important;
+  box-shadow: 0 0 16px rgba(0, 212, 255, 0.35);
+  transition: box-shadow .3s, filter .3s;
+}
+.btn-primary:hover {
+  background-image: var(--neon-gradient-h);
+  box-shadow: 0 0 26px rgba(0, 212, 255, 0.6);
+  filter: brightness(1.05);
+}
+
+/* ---------- 代码块 ---------- */
+pre {
+  background: #0d1424;
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  border-radius: 8px;
+  padding: 14px 16px;
+  overflow-x: auto;
+  color: #a5d6ff;
+  box-shadow: 0 0 18px rgba(0, 212, 255, 0.08) inset;
+}
+code { color: #ff7ab8; }
+
+/* ---------- 表单 ---------- */
+.form-control {
+  background-color: rgba(13, 20, 36, 0.8);
+  border: 1px solid rgba(0, 212, 255, 0.2);
+  color: #e6edf7;
+}
+.form-control:focus {
+  background-color: #0d1424;
+  border-color: var(--neon-cyan);
+  box-shadow: 0 0 0 0.25rem rgba(0, 212, 255, 0.15);
+  color: #ffffff;
+}
+.form-floating > label { color: var(--text-muted); }
+
+/* ---------- 页脚 ---------- */
+footer.border-top {
+  background: rgba(10, 15, 26, 0.6);
+  border-top: 1px solid rgba(0, 212, 255, 0.15) !important;
+}
+footer .text-muted { color: var(--text-muted) !important; }
+.fa-stack .fa-circle { color: #131a2b; }
+.fa-stack .fa-inverse { color: var(--neon-cyan); }
+
+/* ---------- 滚动条 & 选中 ---------- */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #070b14; }
+::-webkit-scrollbar-thumb { background: #1d2b45; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--neon-cyan); }
+::selection { background: rgba(0, 212, 255, 0.3); color: #fff; }
+
+/* ---------- 粒子背景画布 ---------- */
+#bg-particles {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}

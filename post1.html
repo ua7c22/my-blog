@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="description" content="高并发秒杀系统实战：限流、削峰、防超卖" />
+        <meta name="author" content="杨林" />
+        <title>高并发秒杀系统：从架构设计到落地 - 杨林的技术博客</title>
+        <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
+        <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+        <link href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" rel="stylesheet" type="text/css" />
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css" />
+        <link href="css/styles.css" rel="stylesheet" />
+        <link href="css/theme.css" rel="stylesheet" />
+    </head>
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-light" id="mainNav">
+            <div class="container px-4 px-lg-5">
+                <a class="navbar-brand" href="index.html">杨林的技术博客</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                    菜单
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarResponsive">
+                    <ul class="navbar-nav ms-auto py-4 py-lg-0">
+                        <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4" href="index.html">首页</a></li>
+                        <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4" href="about.html">关于我</a></li>
+                        <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4" href="contact.html">联系我</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        <header class="masthead" style="background-image: url('assets/img/post-bg.jpg')">
+            <div class="container position-relative px-4 px-lg-5">
+                <div class="row gx-4 gx-lg-5 justify-content-center">
+                    <div class="col-md-10 col-lg-8 col-xl-7">
+                        <div class="post-heading">
+                            <h1>高并发秒杀系统：从架构设计到落地</h1>
+                            <h2 class="subheading">限流、削峰、防超卖，一次完整的秒杀实战复盘</h2>
+                            <span class="meta">
+                                发布于
+                                <a href="#!">杨林</a>
+                                于 2026-11-02
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <article class="mb-4">
+            <div class="container px-4 px-lg-5">
+                <div class="row gx-4 gx-lg-5 justify-content-center">
+                    <div class="col-md-10 col-lg-8 col-xl-7">
+                        <p>秒杀是电商领域最经典的超高并发场景：开抢的一瞬间，流量可能是平时的几十甚至上百倍。本文复盘我做的一个秒杀系统，技术栈为 Spring Boot + Redis + RabbitMQ + MySQL，目标是「扛得住、不超卖、不死机」。</p>
+                        <h2 class="section-heading">三个核心难点</h2>
+                        <p>秒杀的难点可以归结为三件事：一是高并发下如何保证库存不被超卖；二是瞬时流量如何不把数据库打垮；三是大量无效请求如何被快速拦截，不占用宝贵资源。</p>
+                        <h2 class="section-heading">整体架构分层</h2>
+                        <p>整个链路从外到内依次是：前端按钮防重（点击后置灰）→ Nginx 限流 → 网关做合法性校验 → 应用层 → Redis 预扣库存 → MQ 异步下单 → MySQL 最终落库。每一层都只做自己该做的事，把压力逐层消化掉。</p>
+                        <h2 class="section-heading">防超卖：Redis + Lua 原子扣减</h2>
+                        <p>库存的判断与扣减必须是一个原子操作，否则两个请求同时读到「还有 1 件」，就会双双下单成功。我用 Redis 缓存库存，配合 Lua 脚本把「查库存 + 扣减」打包成一次原子执行：</p>
+                        <pre><code>-- Redis 原子扣库存（Lua 脚本）
+local stock = tonumber(redis.call('get', KEYS[1]))
+if stock and stock > 0 then
+    redis.call('decr', KEYS[1])
+    return 1
+end
+return 0</code></pre>
+                        <p>同时数据库层再用「乐观锁」兜底（update ... set stock = stock - 1 where stock > 0），保证即使 Redis 出现异常，也不会超卖。</p>
+                        <h2 class="section-heading">削峰填谷：MQ 异步下单</h2>
+                        <p>如果每个请求都直接写数据库，再好的库也扛不住。我的做法是：Redis 扣减成功的请求，生成唯一订单号后投递到 RabbitMQ，后端按自身处理能力匀速消费，把「尖峰」拉成「平谷」，数据库压力骤降。</p>
+                        <h2 class="section-heading">幂等与兜底</h2>
+                        <p>用户疯狂点击、消息重复消费，都可能导致重复下单。我用「唯一订单号 + Redis 去重」保证幂等；下单失败则回滚库存并告警。宁可少卖，不可超卖，这是秒杀的底线。</p>
+                        <h2 class="section-heading">压测结果</h2>
+                        <p>用 JMeter 压测对比：裸 MySQL 架构 QPS 只有几百，且库存错误；换成 Redis + MQ 架构后，接口 QPS 稳定在 1 万以上，平均响应时间几十毫秒，库存零误差。</p>
+                        <p>这套思路同样适用于抢票、限量领券、签到抽奖等任何「瞬时高并发 + 有限资源」的场景，希望对你有帮助。</p>
+                    </div>
+                </div>
+            </div>
+        </article>
+        <footer class="border-top">
+            <div class="container px-4 px-lg-5">
+                <div class="row gx-4 gx-lg-5 justify-content-center">
+                    <div class="col-md-10 col-lg-8 col-xl-7">
+                        <ul class="list-inline text-center">
+                            <li class="list-inline-item"><a href="mailto:TUATG888@163.com" title="邮箱：TUATG888@163.com"><span class="fa-stack fa-lg"><i class="fas fa-circle fa-stack-2x"></i><i class="fas fa-envelope fa-stack-1x fa-inverse"></i></span></a></li>
+                            <li class="list-inline-item"><a href="#!" title="微信：Jik1322"><span class="fa-stack fa-lg"><i class="fas fa-circle fa-stack-2x"></i><i class="fab fa-weixin fa-stack-1x fa-inverse"></i></span></a></li>
+                            <li class="list-inline-item"><a href="#!" title="GitHub（待补充）"><span class="fa-stack fa-lg"><i class="fas fa-circle fa-stack-2x"></i><i class="fab fa-github fa-stack-1x fa-inverse"></i></span></a></li>
+                        </ul>
+                        <div class="small text-center text-muted fst-italic">Copyright &copy; 2026 杨林的技术博客</div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="js/scripts.js"></script>
+        <script src="js/theme.js"></script>
+    </body>
+</html>

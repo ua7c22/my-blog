@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="description" content="基于 Spring Cloud 的微服务电商平台实践" />
+        <meta name="author" content="杨林" />
+        <title>基于 Spring Cloud 的微服务电商平台实践 - 杨林的技术博客</title>
+        <link rel="icon" type="image/x-icon" href="assets/favicon.ico" />
+        <script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+        <link href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" rel="stylesheet" type="text/css" />
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" rel="stylesheet" type="text/css" />
+        <link href="css/styles.css" rel="stylesheet" />
+        <link href="css/theme.css" rel="stylesheet" />
+    </head>
+    <body>
+        <nav class="navbar navbar-expand-lg navbar-light" id="mainNav">
+            <div class="container px-4 px-lg-5">
+                <a class="navbar-brand" href="index.html">杨林的技术博客</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+                    菜单
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarResponsive">
+                    <ul class="navbar-nav ms-auto py-4 py-lg-0">
+                        <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4" href="index.html">首页</a></li>
+                        <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4" href="about.html">关于我</a></li>
+                        <li class="nav-item"><a class="nav-link px-lg-3 py-3 py-lg-4" href="contact.html">联系我</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        <header class="masthead" style="background-image: url('assets/img/post-bg.jpg')">
+            <div class="container position-relative px-4 px-lg-5">
+                <div class="row gx-4 gx-lg-5 justify-content-center">
+                    <div class="col-md-10 col-lg-8 col-xl-7">
+                        <div class="post-heading">
+                            <h1>基于 Spring Cloud 的微服务电商平台实践</h1>
+                            <h2 class="subheading">从单体到微服务：服务拆分、治理与分布式事务</h2>
+                            <span class="meta">
+                                发布于
+                                <a href="#!">杨林</a>
+                                于 2026-10-28
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <article class="mb-4">
+            <div class="container px-4 px-lg-5">
+                <div class="row gx-4 gx-lg-5 justify-content-center">
+                    <div class="col-md-10 col-lg-8 col-xl-7">
+                        <p>当单体应用越做越大，改一行代码要整个部署、某个模块挂了全站陪葬，就说明该拆微服务了。本文复盘我把一个电商单体拆成微服务的过程，技术栈基于 Spring Cloud Alibaba。</p>
+                        <h2 class="section-heading">服务怎么拆</h2>
+                        <p>按照业务域拆分出用户、商品、订单、库存、支付等独立服务，每个服务拥有自己的数据库，服务之间通过接口通信，互不越界。拆分的核心原则是「高内聚、低耦合」，按领域而不是按功能切。</p>
+                        <h2 class="section-heading">注册与配置：Nacos</h2>
+                        <p>服务多了，互相怎么找到对方、配置怎么统一管理就成了问题。我用 Nacos 同时承担注册中心和配置中心，服务启动自动注册、配置动态刷新，运维成本大幅下降。</p>
+                        <h2 class="section-heading">统一入口：Gateway 网关</h2>
+                        <p>对外只暴露一个网关，网关负责路由转发、统一鉴权、限流和日志。客户端不再直连各服务，内部服务拓扑对前端完全透明，安全性和可维护性都更好。</p>
+                        <h2 class="section-heading">远程调用：OpenFeign</h2>
+                        <p>服务间调用用 OpenFeign 声明式完成，一个接口就是一次远程调用，自带负载均衡：</p>
+                        <pre><code>@FeignClient(name = "order-service")
+public interface OrderClient {
+    @PostMapping("/order/create")
+    Result&lt;Long&gt; create(@RequestBody OrderDTO dto);
+}</code></pre>
+                        <h2 class="section-heading">分布式事务：Seata</h2>
+                        <p>「下单」要同时写订单表和扣库存，跨了两个服务、两个库，传统事务失效。我用 Seata 的 AT 模式，把跨服务的操作纳入一个全局事务，最终保证数据一致。</p>
+                        <h2 class="section-heading">流控降级：Sentinel</h2>
+                        <p>大促时某服务可能被压垮，进而拖垮整条链路。用 Sentinel 做限流、熔断和降级，核心接口过载时快速失败、兜底返回，保护系统不雪崩。</p>
+                        <p>微服务不是银弹，拆分也带来了分布式复杂度。但掌握好拆分粒度与治理组件，它就是支撑业务长期演进的正解。这套架构我也整理了完整的部署脚本，后续文章再展开。</p>
+                    </div>
+                </div>
+            </div>
+        </article>
+        <footer class="border-top">
+            <div class="container px-4 px-lg-5">
+                <div class="row gx-4 gx-lg-5 justify-content-center">
+                    <div class="col-md-10 col-lg-8 col-xl-7">
+                        <ul class="list-inline text-center">
+                            <li class="list-inline-item"><a href="mailto:TUATG888@163.com" title="邮箱：TUATG888@163.com"><span class="fa-stack fa-lg"><i class="fas fa-circle fa-stack-2x"></i><i class="fas fa-envelope fa-stack-1x fa-inverse"></i></span></a></li>
+                            <li class="list-inline-item"><a href="#!" title="微信：Jik1322"><span class="fa-stack fa-lg"><i class="fas fa-circle fa-stack-2x"></i><i class="fab fa-weixin fa-stack-1x fa-inverse"></i></span></a></li>
+                            <li class="list-inline-item"><a href="#!" title="GitHub（待补充）"><span class="fa-stack fa-lg"><i class="fas fa-circle fa-stack-2x"></i><i class="fab fa-github fa-stack-1x fa-inverse"></i></span></a></li>
+                        </ul>
+                        <div class="small text-center text-muted fst-italic">Copyright &copy; 2026 杨林的技术博客</div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="js/scripts.js"></script>
+        <script src="js/theme.js"></script>
+    </body>
+</html>
